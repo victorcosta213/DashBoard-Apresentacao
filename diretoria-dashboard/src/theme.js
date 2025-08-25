@@ -15,7 +15,7 @@ export const PALETTE = {
   kpiValue: '#0f172a',
   kpiTitle: '#475569',
 
-  // gráficos
+  // gráficos (cores base)
   chart: {
     axis: '#374151',
     grid: '#e5e7eb',
@@ -23,7 +23,7 @@ export const PALETTE = {
       adm: '#2563eb',     // Admissões
       dem: '#ef4444',     // Desligamentos
       lot: '#06b6d4',     // Lotação (geral)
-      activeLot: '#16a34a', // 👈 NOVO: Ativos por Lotação (verde)
+      activeLot: '#16a34a', // Ativos por Lotação (verde)
     },
     pieByCargo: {
       EFETIVO: '#06b6d4',
@@ -33,6 +33,9 @@ export const PALETTE = {
       fallback: ['#0ea5e9', '#f59e0b', '#10b981', '#8b5cf6', '#94a3b8'],
     }
   },
+
+  // paleta para séries empilhadas (ordem cíclica)
+  series: ['#0ea5e9', '#7c3aed', '#06b6d4', '#f59e0b', '#10b981', '#ef4444', '#94a3b8'],
 
   // tags
   tag: {

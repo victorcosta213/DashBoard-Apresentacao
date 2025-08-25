@@ -13,15 +13,12 @@ function colorForCargo(name) {
   return pool[i]
 }
 
-export function ChartsRow({ serieMensal, porCargo, onCargoSelect }) {
+export function ChartsRow({ serieMensal, porCargo, onCargoSelect, height = 320 }) {
   return (
     <Row gutter={[16, 16]}>
       <Col xs={24} lg={12}>
-        <Card
-          title="Admissões x Desligamentos (mês)"
-          styles={{ header: { color: PALETTE.cardTitle } }}   // 👈 novo
-        >
-          <div style={{ width: '100%', height: 320 }}>
+        <Card title="Admissões x Desligamentos (mês)" styles={{ header: { color: PALETTE.cardTitle } }}>
+          <div style={{ width: '100%', height }}>
             <ResponsiveContainer>
               <BarChart data={serieMensal} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={PALETTE.chart.grid} strokeDasharray="3 3" />
@@ -38,11 +35,8 @@ export function ChartsRow({ serieMensal, porCargo, onCargoSelect }) {
       </Col>
 
       <Col xs={24} lg={12}>
-        <Card
-          title="Distribuição por Cargo"
-          styles={{ header: { color: PALETTE.cardTitle } }}   // 👈 novo
-        >
-          <div style={{ width: '100%', height: 320 }}>
+        <Card title="Distribuição por Cargo" styles={{ header: { color: PALETTE.cardTitle } }}>
+          <div style={{ width: '100%', height }}>
             <ResponsiveContainer>
               <PieChart>
                 <Tooltip />
@@ -51,7 +45,7 @@ export function ChartsRow({ serieMensal, porCargo, onCargoSelect }) {
                   data={porCargo}
                   dataKey="value"
                   nameKey="name"
-                  outerRadius={110}
+                  outerRadius={height < 280 ? 90 : 110}
                   label
                   onClick={(slice) => onCargoSelect?.(slice?.name)}
                 >
@@ -68,13 +62,10 @@ export function ChartsRow({ serieMensal, porCargo, onCargoSelect }) {
   )
 }
 
-export function LotacaoBar({ porLotacao, onLotacaoSelect }) {
+export function LotacaoBar({ porLotacao, onLotacaoSelect, height = 280 }) {
   return (
-    <Card
-      title="Lotação — Top locais"
-      styles={{ header: { color: PALETTE.cardTitle } }}       // 👈 novo
-    >
-      <div style={{ width: '100%', height: 280 }}>
+    <Card title="Lotação — Top locais" styles={{ header: { color: PALETTE.cardTitle } }}>
+      <div style={{ width: '100%', height }}>
         <ResponsiveContainer>
           <BarChart data={porLotacao} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={PALETTE.chart.grid} strokeDasharray="3 3" />
@@ -95,13 +86,11 @@ export function LotacaoBar({ porLotacao, onLotacaoSelect }) {
   )
 }
 
-export function ActiveByLocationBar({ data, onSelect }) {
+// Gráfico de Ativos por lotação (verde)
+export function ActiveByLocationBar({ data, onSelect, height = 280 }) {
   return (
-    <Card
-      title="Ativos por Lotação"
-      styles={{ header: { color: PALETTE.cardTitle } }}       // 👈 novo
-    >
-      <div style={{ width: '100%', height: 280 }}>
+    <Card title="Ativos por Lotação" styles={{ header: { color: PALETTE.cardTitle } }}>
+      <div style={{ width: '100%', height }}>
         <ResponsiveContainer>
           <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={PALETTE.chart.grid} strokeDasharray="3 3" />
