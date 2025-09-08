@@ -23,9 +23,12 @@ import PeriodBalance from './components/PeriodBalance'
 import Turnover from './components/Turnover'
 import HeadcountStacked from './components/HeadcountStacked'
 import DataTable from './components/DataTable'
-import ThemeToggle from './components/ThemeToggle'
 import OverlaySpinner from './components/OverlaySpinner'
 import DashboardSkeleton from './components/DashboardSkeleton'
+import EfetivosCohortTable from './components/EfetivosCohortTable'
+
+// 👇 NOVO
+import VariaRemuneracao from './components/VariaRemuneracao'
 
 const { Header, Content } = Layout
 const { Title, Text } = Typography
@@ -60,7 +63,6 @@ export default function App() {
       skipEmptyLines: true,
       complete: (res) => {
         setRows(res.data as any[])
-        // pequeno delay para visual mais suave
         setTimeout(() => setCsvLoading(false), 250)
       },
       error: () => setCsvLoading(false),
@@ -71,8 +73,6 @@ export default function App() {
   const [cargoFilter, _setCargoFilter] = useState<string | undefined>()
   const [lotacaoFilter, _setLotacaoFilter] = useState<string | undefined>()
   const [periodo, _setPeriodo] = useState<any[] | undefined>() // [dayjs, dayjs] | undefined
-
-  // useTransition para mostrar overlay rápido ao recalcular gráficos/tabela
   const [isPending, startTransition] = useTransition()
 
   const setCargoFilter = (v?: string) => startTransition(() => _setCargoFilter(v))
@@ -267,6 +267,77 @@ export default function App() {
       .sort((a, b) => b.qtd - a.qtd)
   }, [colaboradores])
 
+  // ===== Efetivos (coorte): total e por lotação =====
+  const efetivosCohort = useMemo(() => {
+    const hasPeriod = hasValidPeriodo
+    const ini = hasPeriod ? dayjs(periodo![0]).startOf('day') : null
+    const fim = hasPeriod ? dayjs(periodo![1]).endOf('day') : dayjs().endOf('day')
+    const cutoffLabel = hasPeriod
+      ? `${ini!.format('DD/MM/YYYY')} — ${fim.format('DD/MM/YYYY')}`
+      : `Hoje (${fim.format('DD/MM/YYYY')})`
+
+    const isEfetivo = (c: any) => {
+      const cargo = (c?.CARGO || '').toString().toLowerCase()
+      return /efetiv/.test(cargo)
+    }
+
+    let admitted = 0, stayed = 0, left = 0
+    ;(colaboradores as any[]).forEach((c) => {
+      if (!isEfetivo(c)) return
+      const adm = c.DATA_ADMISSAO ? dayjs(c.DATA_ADMISSAO) : null
+      const dem = c.DATA_DEMISSAO ? dayjs(c.DATA_DEMISSAO) : null
+
+      const inCohort = hasPeriod
+        ? (adm != null && adm.isBetween(ini!, fim, 'day', '[]'))
+        : (adm != null)
+
+      if (!inCohort) return
+      admitted++
+
+      const permaneceu = (dem == null) || dem.isAfter(fim, 'day')
+      if (permaneceu) stayed++
+      else left++
+    })
+
+    return { admitted, stayed, left, cutoffLabel }
+  }, [colaboradores, periodo, hasValidPeriodo])
+
+  const efetivosCohortByLotacao = useMemo(() => {
+    const hasPeriod = hasValidPeriodo
+    const ini = hasPeriod ? dayjs(periodo![0]).startOf('day') : null
+    const fim = hasPeriod ? dayjs(periodo![1]).endOf('day') : dayjs().endOf('day')
+
+    const isEfetivo = (c: any) => {
+      const cargo = (c?.CARGO || '').toString().toLowerCase()
+      return /efetiv/.test(cargo)
+    }
+
+    const acc = new Map<string, { contratados: number, permaneceram: number, demitidos: number }>()
+    ;(colaboradores as any[]).forEach((c) => {
+      if (!isEfetivo(c)) return
+
+      const adm = c.DATA_ADMISSAO ? dayjs(c.DATA_ADMISSAO) : null
+      const dem = c.DATA_DEMISSAO ? dayjs(c.DATA_DEMISSAO) : null
+      const lot = c.LOTAÇÃO || '—'
+
+      const inCohort = hasPeriod
+        ? (adm != null && adm.isBetween(ini!, fim, 'day', '[]'))
+        : (adm != null)
+      if (!inCohort) return
+
+      const item = acc.get(lot) || { contratados: 0, permaneceram: 0, demitidos: 0 }
+      item.contratados += 1
+      const permaneceu = (dem == null) || dem.isAfter(fim, 'day')
+      if (permaneceu) item.permaneceram += 1
+      else item.demitidos += 1
+      acc.set(lot, item)
+    })
+
+    return Array.from(acc.entries())
+      .map(([lotacao, v]) => ({ lotacao, ...v }))
+      .sort((a, b) => b.contratados - a.contratados)
+  }, [colaboradores, periodo, hasValidPeriodo])
+
   // ===== AntD tokens conforme tema =====
   const algorithm = dark ? AntTheme.darkAlgorithm : AntTheme.defaultAlgorithm
   const tokens = {
@@ -282,7 +353,6 @@ export default function App() {
 
   return (
     <ConfigProvider theme={{ algorithm, token: tokens }}>
-      {/* Overlay spinner global */}
       <OverlaySpinner active={showOverlay} tip={csvLoading ? 'Carregando dados...' : 'Atualizando...'} />
 
       <Layout style={{ minHeight: '100vh' }}>
@@ -292,7 +362,6 @@ export default function App() {
               <Title level={isMobile ? 4 : 3} className="header-title">DashBoard - RH</Title>
               <Text className="header-subtitle">Visão executiva do quadro de pessoal • filtros e tendências</Text>
             </div>
-            
           </div>
         </Header>
 
@@ -332,6 +401,15 @@ export default function App() {
               />
 
               <KpiCards total={kpis.total} ativos={kpis.ativos} desligados={kpis.desligados} />
+
+              {/* 👇 NOVO: Variação de Benefícios e Salários */}
+              <VariaRemuneracao />
+
+              {/* 👇 Efetivos (coorte) */}
+              <EfetivosCohortTable
+                rows={efetivosCohortByLotacao}
+                total={efetivosCohort}
+              />
 
               <ChartsRow
                 height={chartH}
